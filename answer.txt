@@ -1,0 +1,65 @@
+import numpy as np
+import random as rnd
+class GA:
+    def random_e(self):
+        to_result = list()
+        prob = [i for i in zip(data['type_prob'], range(self.n))]
+        rnd.shuffle(prob)
+        for i in prob:
+            to_result.append([rnd.randint(0, data['n_workers'] - 1), i[0], i[-1]])
+        return np.array(to_result, dtype=np.int32)
+
+    def fit(self, s):
+        count = 0
+        counted = list()
+        for i in s:
+            plus = data[i[0]][i[1] - 1] * data['hours_prob'][i[-1]]
+            if i[0] not in counted:
+                if (count - plus) < 0:
+                    count += (plus - count)
+                counted.append(i[0])
+            else:
+                count += plus
+        return count
+    def crossover(self, i, j):
+        t = rnd.randint(1, self.n - 1)
+        return np.concatenate((self.pop[i][:t], self.pop[j][t:]), axis=0)
+    def __init__(self, popsize, n, epochs):
+        self.popsize = popsize
+        self.n = n
+        self.pop = np.array([self.random_e() for i in range(self.popsize)])
+        self.epochs = epochs
+    def result(self):
+        self.best = None
+        self.best_fit = 10e6
+        for n in range(self.epochs):
+            for s in self.pop:
+                f = self.fit(s)
+                if f < self.best_fit:
+                    self.best = s
+                    self.best_fit = f
+            new_pop = [self.best]
+            for _ in range(self.popsize - 1):
+                new_pop.append(self.random_e())
+            self.pop = np.array(new_pop)
+        return self.best
+def conv(items):
+    to_return = items.split()
+    if len(to_return) > 1:
+        return [float(i) for i in to_return]
+    return int(items)
+data = dict()
+writer = open(r'output.txt', mode='w')
+to_write = list()
+to_data = map(lambda x: conv(x), open(r'input.txt').read().split('\n'))
+keys = ['n_prob', 'type_prob', 'hours_prob', 'n_workers']
+for i in zip(keys, to_data):
+    data[i[0]] = i[-1]
+for i in zip(range(int(data['n_workers'])), to_data):
+    data[i[0]] = i[-1]
+genetic = GA(10, data['n_prob'], 20)
+result = genetic.result()
+for i in result:
+    to_write.append(str(i[0] + 1))
+to_write.sort()
+writer.write(' '.join(to_write))
